@@ -1,0 +1,66 @@
+{
+  "name": "cost_distribution",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "dependencies": {
+    "@cap-js/hana": "^2.8.0",
+    "@sap-cloud-sdk/http-client": "^4.6.0",
+    "@sap/cds": "^9",
+    "axios": "^1.16.1",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "express": "^4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2",
+    "@sap/cds-dk": "^9",
+    "cds-plugin-ui5": "^0.13.0",
+    "mbt": "^1.2.49",
+    "rimraf": "^5.0.5"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-cost-distrbution-ui": "cds watch --open com.aramco.costdistrbutionui/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "undeploy": "cf undeploy cost_distribution --delete-services --delete-service-keys --delete-service-brokers",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
+  },
+  "cds": {
+    "connectivity": true,
+    "destinations": true,
+    "requires": {
+      "db": {
+        "kind": "hana"
+      },
+      "ARIBA": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "Aramco-e-Marketplace-surrogate-bidding"
+        }
+      },
+      "uaa": {
+        "kind": "xsuaa"
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "mbohra-v@ejada.com": {}
+          }
+        },
+        "[production]": {
+          "kind": "xsuaa"
+        }
+      },
+      "connectivity": true,
+      "destinations": true,
+      "html5-repo": true,
+      "workzone": true
+    }
+  },
+  "private": true,
+  "workspaces": [
+    "app/*"
+  ]
+}

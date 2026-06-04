@@ -1,0 +1,14 @@
+{
+  "qaforum-db-key": {
+    "object_owner": {
+      "container_roles": [
+        "QAFORUM::EventsReadOnly"
+      ]
+    },
+    "application_user": {
+      "container_roles": [
+        "QAFORUM::EventsReadOnly"
+      ]
+    }
+  }
+}

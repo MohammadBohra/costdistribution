@@ -1,0 +1,135 @@
+
+<mvc:View
+    controllerName="com.aramco.costdistrbutionui.controller.View1"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+
+    <Page id="page" title="{i18n>title}" width="60%">
+
+        <content>
+
+        <Bar width="60%">
+    <contentLeft>
+        <ObjectStatus
+            text="{viewModel>/currentStatus}"
+            state="{viewModel>/statusState}" />
+            <Text text="{viewModel>/lastUpdated}" class="sapUiTinyMarginLeft"/>
+    </contentLeft>
+
+    <contentMiddle>
+        <Button
+    text="Start Process"
+    type="Emphasized"
+    press=".onStartProcess" />
+    </contentMiddle>
+</Bar>
+
+            <VBox class="sapUiSmallMargin">
+
+                <Title text="Process Logs" visible="false"/>
+                <BusyIndicator
+        size="1.5rem"
+        text="Processing cost distribution..."
+        visible="{viewModel>/busy}" />
+        <MessageStrip
+    type="Warning"
+    showIcon="true"
+    text="Process is running. Please do not refresh or close this browser window."
+    visible="{viewModel>/busy}" />
+
+    <MessageStrip
+                    text="{viewModel>/finalMessage}"
+                    type="{viewModel>/messageType}"
+                    visible="{viewModel>/showFinalMessage}" />
+
+                    <Panel headerText="Process Context" class="sapUiResponsiveMargin" width="60%">
+
+    <HBox justifyContent="SpaceBetween">
+
+        <VBox>
+            <Label text="Process ID:" class="sapUiTinyMarginBottom"/>
+            <Text text="{viewModel>/processId}" />
+        </VBox>
+
+        <VBox>
+            <Label text="Event ID:" class="sapUiTinyMarginBottom"/>
+            <Text text="{viewModel>/eventId}" />
+        </VBox>
+
+        <VBox>
+            <Label text="Supplier ID:" class="sapUiTinyMarginBottom"/>
+            <Text text="{viewModel>/supplierId}" />
+        </VBox>
+
+    </HBox>
+
+</Panel>
+
+                <Table
+    id="logTable"
+    items="{viewModel>/logs}"
+    busy="{viewModel>/busy}" width="60%" class="sapUiResponsiveMargin">
+
+    <columns>
+
+        <!-- <Column><Text text="Time"/></Column> -->
+        <!-- <Column><Text text="Process ID"/></Column>
+        <Column><Text text="Event ID"/></Column>
+        <Column><Text text="Supplier ID"/></Column> -->
+        <Column><Text text="Status"/></Column>
+        <Column><Text text="Message"/></Column>
+
+        <!-- <Column><Text text="Export Job"/></Column>
+        <Column><Text text="Import Job"/></Column>
+        <Column><Text text="Submit Job"/></Column> -->
+
+        
+        <!-- <Column><Text text="Completed At"/></Column> -->
+
+    </columns>
+
+    <items>
+        <ColumnListItem>
+            <cells>
+
+                <!-- <Text text="{
+                    path: 'createdAt',
+                    type: 'sap.ui.model.type.DateTime',
+                    formatOptions: { style: 'medium' }
+                }"/> -->
+
+                <!-- <Text text="{viewModel>processId}"/>
+                <Text text="{viewModel>eventId}"/>
+                <Text text="{viewModel>supplierId}"/> -->
+
+                <ObjectStatus text="{viewModel>status}"/>
+
+                <Text text="{viewModel>errorMessage}" wrapping="true"/>
+
+                <!-- <Text text="{viewModel>exportJobId}"/>
+                <Text text="{viewModel>importJobId}"/>
+                <Text text="{viewModel>submitJobId}"/> -->
+
+                
+
+                <!-- <Text text="{
+                    path: 'completedAt',
+                    type: 'sap.ui.model.type.DateTime',
+                    formatOptions: { style: 'medium' }
+                }"/> -->
+
+            </cells>
+        </ColumnListItem>
+    </items>
+</Table>
+
+                
+
+            </VBox>
+
+        </content>
+
+    </Page>
+
+</mvc:View>
+

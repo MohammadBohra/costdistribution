@@ -1,0 +1,187 @@
+_schema-version: 3.3.0
+ID: cost_distribution
+description: A simple CAP project.
+version: 1.0.0
+modules:
+  - name: cost_distribution-srv
+    type: nodejs
+    path: gen/srv
+    requires:
+      - name: cost_distribution-auth
+      - name: cost_distribution-destination
+      - name: cost_distribution-connectivity
+      - name: cost_distribution-db
+      - name: qaforum-db
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+    parameters:
+      buildpack: nodejs_buildpack
+      instances: 1
+    build-parameters:
+      builder: npm-ci
+  - name: cost_distribution-db-deployer
+    type: hdb
+    path: gen/db
+    requires:
+      - name: cost_distribution-db
+        properties:
+          TARGET_CONTAINER: ~{hdi-container-name}
+      - name: qaforum-db
+        group: SERVICE_REPLACEMENTS
+        properties:
+          key: qaforum-db-key
+          service: ~{the-service-name}
+    parameters:
+      buildpack: nodejs_buildpack
+  - name: cost_distribution-app-content
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: cost_distribution-html5-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - comaramcocostdistrbutionui.zip
+          name: comaramcocostdistrbutionui
+          target-path: resources/
+  - name: comaramcocostdistrbutionui
+    type: html5
+    path: app/cost-distrbution-ui
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+        - npm ci
+        - npm run build
+      supported-platforms:
+        []
+
+  - name: cost_distribution-app-deployer
+    type: com.sap.application.content
+    path: gen
+    requires:
+      - name: cost_distribution-auth
+      - name: srv-api
+      - name: cost_distribution-html5-repo-host
+        parameters:
+          content-target: true
+          config:
+            HTML5Runtime_enabled: true
+      
+    build-parameters:
+      build-result: resources/
+      requires:
+        - name: comaramcocostdistrbutionui
+          artifacts:
+            - comaramcocostdistrbutionui.zip
+          target-path: resources/        
+
+  - name: cost_distribution-destinations
+    type: com.sap.application.content
+    requires:
+      - name: cost_distribution-auth
+        parameters:
+          service-key:
+            name: cost_distribution-auth-key
+      - name: cost_distribution-html5-repo-host
+        parameters:
+          service-key:
+            name: cost_distribution-html5-repo-host-key
+      - name: srv-api
+      - name: cost_distribution-destination
+        parameters:
+          content-target: true
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: cost_distribution-html5-repository
+              ServiceInstanceName: cost_distribution-html5-repo-host
+              ServiceKeyName: cost_distribution-html5-repo-host-key
+              sap.cloud.service: cost_distribution.service
+            - Name: cost_distribution-auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: cost_distribution-auth
+              ServiceKeyName: cost_distribution-auth-key
+              sap.cloud.service: cost_distribution.service
+resources:
+  - name: cost_distribution-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        oauth2-configuration:
+          credential-types:
+            - binding-secret
+            - x509
+        tenant-mode: dedicated
+        xsappname: cost_distribution-${org}-${space}
+      path: ./xs-security.json
+      service: xsuaa
+      service-plan: application
+  - name: cost_distribution-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            destinations:
+              - Authentication: NoAuthentication
+                HTML5.DynamicDestination: true
+                HTML5.ForwardAuthToken: true
+                Name: cost_distribution-dest-service
+                ProxyType: Internet
+                Type: HTTP
+                URL: ~{srv-api/srv-url}
+              - Authentication: NoAuthentication
+                Name: ui5
+                ProxyType: Internet
+                Type: HTTP
+                URL: https://ui5.sap.com
+            existing_destinations_policy: update
+      service: destination
+      service-plan: lite
+    requires:
+      - name: srv-api
+  - name: cost_distribution-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+  - name: cost_distribution-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+    properties:
+      hdi-container-name: ${service-name}
+  - name: qaforum-db
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: qaforum-db
+    properties:
+      the-service-name: ${service-name}
+  - name: cost_distribution-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production

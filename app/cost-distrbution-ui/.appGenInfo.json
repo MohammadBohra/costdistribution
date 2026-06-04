@@ -1,0 +1,23 @@
+{
+  "generationParameters": {
+    "generationDate": "Fri May 29 2026 11:29:44 GMT+0000 (Coordinated Universal Time)",
+    "generatorPlatform": "SAP Business Application Studio",
+    "serviceType": "Local CAP",
+    "metadataFilename": "",
+    "serviceUrl": "http://localhost:4004/odata/v4/cost-distribution/",
+    "appName": "cost-distrbution-ui",
+    "appTitle": "Cost Distribution Process Logs",
+    "appDescription": "An SAP Fiori application.",
+    "appNamespace": "com.aramco",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.148.1",
+    "enableEslint": true,
+    "enableTypeScript": false,
+    "showMockDataInfo": false,
+    "generatorVersion": "1.25.0",
+    "template": "Basic V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [],
+    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/cost-distrbution-ui/webapp/index.html"
+  }
+}

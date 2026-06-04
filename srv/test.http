@@ -1,0 +1,42 @@
+### Get Service Metadata
+GET http://localhost:4004/odata/v4/cost-distribution/$metadata
+Accept: application/json
+
+
+### Get Process Logs
+GET http://localhost:4004/odata/v4/cost-distribution/ProcessLog
+Accept: application/json
+
+
+### Trigger Cost Distribution
+POST http://localhost:4004/odata/v4/cost-distribution/triggerDistribution
+Content-Type: application/json
+Accept: application/json
+
+{
+  "eventId": "Doc246322944",
+  "supplierId": "user10060046@test.com",
+  "triggeredBy": "buyer1"
+}
+
+
+### Trigger Another Supplier
+POST http://localhost:4004/odata/v4/cost-distribution/triggerDistribution
+Content-Type: application/json
+Accept: application/json
+
+{
+  "eventId": "Doc246322945",
+  "supplierId": "supplier2@test.com",
+  "triggeredBy": "buyer2"
+}
+
+
+### Check Latest Logs Ordered By Time
+GET http://localhost:4004/odata/v4/cost-distribution/ProcessLog?$orderby=createdAt desc
+Accept: application/json
+
+
+### Check Specific Event + Supplier
+GET http://localhost:4004/odata/v4/cost-distribution/ProcessLog?$filter=eventId eq 'Doc246322944' and supplierId eq 'user10060046@test.com'
+Accept: application/json

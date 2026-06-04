@@ -1,0 +1,9 @@
+{  
+  "EVENTSUPPLIERS_REMOTE": {
+    "target": {
+      "object": "ARIBA_FORUM_DB_EVENTSUPPLIERS",
+      "schema.configure": "qaforum-db-key/schema"
+    }
+  }
+
+}
