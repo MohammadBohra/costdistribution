@@ -23,6 +23,7 @@ module.exports = {
         EXPORT_FAILED: 'EXPORT_FAILED',
         SUBMIT_FAILED: 'SUBMIT_FAILED',
         FILE_DOWNLOAD_FAILED: 'FILE_DOWNLOAD_FAILED',
+        COMPLETED: 'COMPLETED',
 
         FAILED: 'FAILED'
     },

@@ -7,7 +7,7 @@
       "target": "/odata/v4/$1",
       "destination": "cost_distribution-dest-service",
       "authenticationType": "xsuaa",
-      "csrfProtection": false
+      "csrfProtection": true
     },
     {
       "source": "^/resources/(.*)$",

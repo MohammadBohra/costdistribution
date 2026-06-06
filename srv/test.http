@@ -8,6 +8,15 @@ GET http://localhost:4004/odata/v4/cost-distribution/ProcessLog
 Accept: application/json
 
 
+### Delete Process Log
+POST http://localhost:4004/odata/v4/cost-distribution/deleteProcessLog
+Content-Type: application/json
+
+{
+  "processId": "b874f29e-25cd-4425-ad6b-e312b1109320"
+}
+
+
 ### Trigger Cost Distribution
 POST http://localhost:4004/odata/v4/cost-distribution/triggerDistribution
 Content-Type: application/json

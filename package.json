@@ -39,6 +39,12 @@
           "destination": "Aramco-e-Marketplace-surrogate-bidding"
         }
       },
+      "EVENTMANAGEMENT": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "Aramco-e-Marketplace-event-management"
+        }
+      },
       "uaa": {
         "kind": "xsuaa"
       },

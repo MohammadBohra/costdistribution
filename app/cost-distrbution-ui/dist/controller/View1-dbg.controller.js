@@ -25,13 +25,13 @@ sap.ui.define([
             // Read URL parameters from Ariba
             const oParams = new URLSearchParams(window.location.search);
             this._eventId = oParams.get("eventId");
-            this._supplierId = oParams.get("supplierId");
+            // this._supplierId = oParams.get("supplierId");
 
         },
 
         onStartProcess: function () {
-            if (!this._eventId || !this._supplierId) {
-                MessageToast.show("Missing required parameters");
+            if (!this._eventId) {
+                MessageToast.show("Missing eventId parameter in URL");
                 return;
             }
             const oViewModel = this.getView().getModel("viewModel");
@@ -43,12 +43,12 @@ sap.ui.define([
 
             this._triggerDistribution(
                 this._eventId,
-                this._supplierId
+                //this._supplierId
             );
 
         },
 
-        _triggerDistribution: async function (eventId, supplierId) {
+        _triggerDistribution: async function (eventId) {
             const that = this;
             const sServiceUrl =
                 this.getOwnerComponent().getModel().sServiceUrl
@@ -73,8 +73,7 @@ sap.ui.define([
                     "X-CSRF-Token": csrfToken
                 },
                 body: JSON.stringify({
-                    eventId: eventId,
-                    supplierId: supplierId
+                    eventId: eventId
                 })
             })
                 .then(response => response.json())
@@ -90,7 +89,7 @@ sap.ui.define([
                     const oViewModel = that.getView().getModel("viewModel");
                     oViewModel.setProperty("/processId", processId);
                     oViewModel.setProperty("/eventId", eventId);
-                    oViewModel.setProperty("/supplierId", supplierId);
+                    // oViewModel.setProperty("/supplierId", supplierId);
 
 
                     that._startPolling(processId);
@@ -181,7 +180,7 @@ oViewModel.setProperty("/logs", filteredLogs);
 
                         // ✅ STOP CONDITION
                         if (
-                            latest.status === "SUBMIT_COMPLETED" ||
+                            latest.status === "COMPLETED" ||
                             latest.status === "FAILED"
                         ) {
                             clearInterval(this._interval);

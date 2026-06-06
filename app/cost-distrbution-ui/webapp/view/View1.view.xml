@@ -29,7 +29,6 @@
                 <Title text="Process Logs" visible="false"/>
                 <BusyIndicator
         size="1.5rem"
-        text="Processing cost distribution..."
         visible="{viewModel>/busy}" />
         <MessageStrip
     type="Warning"
@@ -56,10 +55,10 @@
             <Text text="{viewModel>/eventId}" />
         </VBox>
 
-        <VBox>
+        <!-- <VBox>
             <Label text="Supplier ID:" class="sapUiTinyMarginBottom"/>
             <Text text="{viewModel>/supplierId}" />
-        </VBox>
+        </VBox> -->
 
     </HBox>
 
@@ -74,8 +73,8 @@
 
         <!-- <Column><Text text="Time"/></Column> -->
         <!-- <Column><Text text="Process ID"/></Column>
-        <Column><Text text="Event ID"/></Column>
-        <Column><Text text="Supplier ID"/></Column> -->
+        <Column><Text text="Event ID"/></Column> -->
+        <Column><Text text="Supplier ID"/></Column> 
         <Column><Text text="Status"/></Column>
         <Column><Text text="Message"/></Column>
 
@@ -99,8 +98,8 @@
                 }"/> -->
 
                 <!-- <Text text="{viewModel>processId}"/>
-                <Text text="{viewModel>eventId}"/>
-                <Text text="{viewModel>supplierId}"/> -->
+                <Text text="{viewModel>eventId}"/>  -->
+                <Text text="{viewModel>supplierId}"/> 
 
                 <ObjectStatus text="{viewModel>status}"/>
 

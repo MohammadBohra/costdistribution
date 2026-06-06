@@ -5,6 +5,7 @@ const path = require('path');
 const ExcelJS = require('exceljs');
 const FormData = require('form-data');
 const cds = require('@sap/cds');
+const { getDestination } = require('@sap-cloud-sdk/connectivity');
 
 const {
     getAribaConfig, getAccessTokenCached
@@ -23,31 +24,28 @@ const {
 } = require('./polling-service');
 
 
-async function startProcess(service, eventId, supplierId, triggeredBy) {
 
-    // const db = await cds.connect.to('db');
+async function startProcess(service, eventId, triggeredBy) {
 
-    // const existing = await SELECT.one
-    //     .from('cost.distribution.ProcessLog')
-    //     .where({
-    //         eventId,
-    //         supplierId
-    //     })
-    //     .orderBy('createdAt desc');
+  
     const db = await cds.connect.to('db');
 const { SELECT } = cds.ql;
 
 const FINAL_STATUSES = [
     STATUS.SUBMIT_COMPLETED,
     STATUS.SUBMIT_FAILED,
-    STATUS.FAILED
+    STATUS.FAILED,
+    STATUS.EXPORT_FAILED,
+    STATUS.IMPORT_FAILED,
+    STATUS.FILE_DOWNLOAD_FAILED
+    
 ];
 
 const latestProcess = await db.run(
   SELECT.one
     .from('cost.distribution.ProcessLog')
     .columns('processId')
-    .where({ eventId, supplierId })
+    .where({ eventId })
     .orderBy('createdAt desc')
 );
 
@@ -61,11 +59,7 @@ if (latestProcess) {
       })
       .where({
         status: {
-          in: [
-            STATUS.SUBMIT_COMPLETED,
-            STATUS.SUBMIT_FAILED,
-            STATUS.FAILED
-          ]
+          in: FINAL_STATUSES
         }
       })
   );
@@ -78,70 +72,14 @@ if (latestProcess) {
     };
   }
 }
-// const active = await db.run(
-//     SELECT.one
-//         .from('cost.distribution.ProcessLog')
-//         .where({ eventId, supplierId })
-//         .where('status not in', FINAL_STATUSES)
-//         .orderBy('createdAt desc')
-// );
-// if (active) {
-//     return {
-//         processId: active.processId,
-//         status: active.status
-//     };
-// }
 
-// const existing = await db.run(
-//     SELECT.one.from('cost.distribution.ProcessLog')
-//         .where({
-//             eventId,
-//             supplierId
-//         })
-//         .where(
-//             `status not in`,
-//             [
-//                 'SUBMIT_COMPLETED',
-//                 'SUBMIT_FAILED',
-//                 'FAILED'
-//             ]
-//         )
-//         .orderBy('createdAt desc')
-// );
-
-//     // Prevent duplicate running process
-//     if (existing &&
-//         [
-//             STATUS.REQUEST_RECEIVED,
-//             STATUS.EXPORT_TRIGGERED,
-//             STATUS.EXPORT_IN_PROGRESS,
-//             STATUS.IMPORT_TRIGGERED,
-//             STATUS.IMPORT_IN_PROGRESS,
-//             STATUS.SUBMIT_TRIGGERED,
-//             STATUS.SUBMIT_IN_PROGRESS,
-//             STATUS.JOB_STATUS_UPDATE
-//         ].includes(existing.status)) {
-//             return {
-//         processId: existing.processId,
-//         status: existing.status
-//     };
-
-//         return `
-//         <html>
-//             <body>
-//                 <h3>Request In Progress</h3>
-//                 <p>Current status: ${existing.status}</p>
-//             </body>
-//         </html>
-//         `;
-//     }
     const processId = cds.utils.uuid();
     // Create Log
     const log = {
         ID: cds.utils.uuid(),
         processId,
         eventId,
-        supplierId,
+        //supplierId,
         triggeredBy,
         status: STATUS.REQUEST_RECEIVED,
         currentStep: 'START',
@@ -159,7 +97,7 @@ if (latestProcess) {
     runProcess(
         processId,
         eventId,
-        supplierId,
+        //supplierId,
         triggeredBy
     ).catch(console.error);
 
@@ -172,11 +110,31 @@ if (latestProcess) {
     async function runProcess(
     processId,
     eventId,
-    supplierId,
+    //supplierId,
     triggeredBy
 ) {
-    try {
+    let supplierId1 = null;
+    
 
+        // get all suppliers of the event id and trigger export,polling, download, update excel, import and submit for each supplier
+        let suppliers = await getSuppliersForEvent(eventId,processId);
+        if (suppliers.length === 0) {
+            suppliers = await fetchSuppliersFromAriba(eventId,processId);
+        }
+        if (suppliers.length === 0) {
+            await insertLog(
+                processId,
+                eventId,
+                null,
+                STATUS.FAILED,
+                `No suppliers found for event ${eventId}`,
+                db
+            );
+            return;
+        }
+        for (const supplierId of suppliers) {
+            try {
+            supplierId1 = supplierId;
         // EXPORT
         const exportResult = await triggerExport(
             eventId,
@@ -204,10 +162,6 @@ if (latestProcess) {
             db
         );
 
-        // await updateLog(log.ID, {
-        //     status: STATUS.EXPORT_COMPLETED,
-        //     exportFileId: exportStatus.fileId
-        // });
         await insertLog(
             processId,
             eventId,
@@ -231,9 +185,6 @@ if (latestProcess) {
         );
 
 
-        // await updateLog(log.ID, {
-        //     status: STATUS.FILE_DOWNLOADED
-        // });
         await insertLog(
             processId,
             eventId,
@@ -264,10 +215,7 @@ if (latestProcess) {
             db 
         );
 
-        // await updateLog(log.ID, {
-        //     status: STATUS.IMPORT_TRIGGERED,
-        //     importJobId: importResult.jobId
-        // });
+    
 
         await insertLog(
             processId,
@@ -288,9 +236,6 @@ if (latestProcess) {
             db
         );
 
-        // await updateLog(log.ID, {
-        //     status: STATUS.IMPORT_COMPLETED,db
-        // });
 
         await insertLog(
             processId,
@@ -315,10 +260,7 @@ if (latestProcess) {
             db
         );
 
-        // await updateLog(log.ID, {
-        //     status: STATUS.SUBMIT_TRIGGERED,
-        //     submitJobId: submitResult.jobId
-        // });
+     
 
         await insertLog(
             processId,
@@ -338,61 +280,136 @@ if (latestProcess) {
             supplierId,
             db
         );
-
-        // await updateLog(log.ID, {
-        //     status: STATUS.SUBMIT_COMPLETED,
-        //     completedAt: new Date()
-        // });
-
         await insertLog(
             processId,
             eventId,
             supplierId,
-            STATUS.SUBMIT_COMPLETED,
-           
-            'Submit completed successfully. Cost distribution process finished.',
+            STATUS.SUBMIT_COMPLETED,           
+            'Submit completed successfully. Cost distribution process finished. for supplier ' + supplierId,
             db
         );
 
-        return `
-        <html>
-            <body>
-                <h3>Completed</h3>
-                <p>Cost distribution completed successfully.</p>
-            </body>
-        </html>
-        `;
-
-    } catch (err) {
-
-        // await updateLog(log.ID, {
-        //     status: STATUS.FAILED,
-        //     errorMessage: err.message
-        // });
-
+        // return `
+        // <html>
+        //     <body>
+        //         <h3>Completed</h3>
+        //         <p>Cost distribution completed successfully for supplier ${supplierId}.</p>
+        //     </body>
+        // </html>
+        // `;
+    }
+        catch (err) {
+            console.error(
+            `Supplier ${supplierId} failed`,
+            err.message
+        );
         await insertLog(
             processId,
             eventId,
-            supplierId,
+            supplierId1,
             STATUS.FAILED,            
             `Process failed: ${err.message}`,
-            //errorMessage: err.message,
             db
         );
-
-        return `
-        <html>
-            <body>
-                <h3>Failed</h3>
-                <p>${err.message}</p>
-            </body>
-        </html>
-        `;
+        continue
+        // return `
+        // <html>
+        //     <body>
+        //         <h3>Failed</h3>
+        //         <p>${err.message}</p>
+        //     </body>
+        // </html>
+        // `;
     }
+    } //for loop of suppliers end
+
+    await insertLog(
+    processId,
+    eventId,
+    null,
+    STATUS.COMPLETED,
+    'All suppliers processed',
+    db
+);
+    
 }
 
     
 }
+
+async function getSuppliersForEvent(eventId,processId) {
+    // Implementation for fetching suppliers for a given event
+     const db = await cds.connect.to('db')    
+        
+       	
+        let sql = `
+        SELECT DISTINCT
+          "SUPPLIERCONTACTEMAIL"                   AS "SupplierId"
+        FROM "E510051A0B3B4884BC5E73EDD61D313F"."EVENTSUPPLIERS_REMOTE"        
+        WHERE "EVENTID" = ?
+      `;      
+      const result = await db.run(sql, [eventId]);     
+      return result.map(row => row.SupplierId);
+}
+async function fetchSuppliersFromAriba (eventId,processId) {
+    
+    const serviceName = 'EVENTMANAGEMENT';
+  const destinationName =
+    cds.env.requires?.[serviceName]?.credentials?.destination;
+  const ariba = await cds.connect.to(serviceName); // subaccount destination
+  const destination = await getDestination({ destinationName });
+  if (!destination) {
+    throw new Error('Destination Eventmanagement not found');
+  }
+  const apiKey = destination.originalProperties.destinationConfiguration.apikey;
+  const realm = destination.originalProperties.destinationConfiguration.realm;
+  const user = destination.originalProperties.destinationConfiguration.user;
+  const passwordAdapter = destination.originalProperties.destinationConfiguration.passwordAdapter;
+
+
+    try {
+
+        const url =
+      `/${eventId}/supplierInvitations` +
+      `?realm=${realm}` +
+      `&user=${user}` +
+      `&passwordAdapter=${passwordAdapter}`;
+
+    const result = await ariba.send({
+      method: 'GET',
+      path: url,
+      headers: {
+        apiKey: apiKey,
+        Accept: 'application/json'
+      }
+    });
+
+    // return result.payload.map(item => ({ item.mainContact.uniqueName.trim() }));
+    return result.payload.map(row => row.mainContact.uniqueName);
+
+    } catch (error) {
+
+        console.error(
+            'Fetch Suppliers Error:',
+            error.response?.data || error.message
+        );
+
+        await insertLog(
+            processId,
+            eventId,
+            null,
+            STATUS.FAILED,
+            `Fetch Suppliers Error: ${error.response?.data || error.message}`,
+            db
+        );
+
+        throw error;
+    }
+
+
+    
+
+  }
 
 async function triggerExport(eventId, supplierId,processId, db) {
 
